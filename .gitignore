@@ -1,0 +1,7 @@
+*.exe
+.idea/
+go.sum
+vendor/
+*.o
+*.so
+*.dll
