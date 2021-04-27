@@ -64,7 +64,7 @@ func (c *Client) signRequest(req *http.Request) (err error) {
 	return nil
 }
 
-func (c *Client) makeRequest(method, path string, body io.Reader) (*http.Request, error) {
+func (c *Client) makeRequest(method, path string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, path, body)
 
 	if err != nil {
@@ -73,9 +73,20 @@ func (c *Client) makeRequest(method, path string, body io.Reader) (*http.Request
 
 	if c.ApiKey != "" && c.ApiSecret != "" {
 		// sign this request
-		c.signRequest(req)
+		e := c.signRequest(req)
+
+		if e != nil {
+			return nil, e
+		}
 	}
-	return req, nil
+
+	response, reqError := c.httpClient.Do(req)
+
+	if reqError != nil {
+		return nil, reqError
+	}
+
+	return response, nil
 }
 
 //New creates a new client using an API key and API secret
