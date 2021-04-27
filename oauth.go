@@ -20,8 +20,9 @@ var (
 )
 
 //NewOauthClient creates a new Coinbase client authenticated via OAuth2 token
-func NewOauthClient(token oauth2.TokenSource) *Client {
+func NewOauthClient(token oauth2.TokenSource, errorHandler func(error)) *Client {
 	return &Client{
-		httpClient: oauth2.NewClient(context.Background(), token),
+		httpClient:   oauth2.NewClient(context.Background(), token),
+		errorHandler: errorHandler,
 	}
 }

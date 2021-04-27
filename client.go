@@ -1,11 +1,14 @@
 package coinbase
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -31,7 +34,8 @@ type Client struct {
 	ApiSecret string
 
 	// HttpClient is the current HTTP client
-	httpClient *http.Client
+	httpClient   *http.Client
+	errorHandler func(error)
 }
 
 //signRequest signs the current request if needed
@@ -64,25 +68,75 @@ func (c *Client) signRequest(req *http.Request) (err error) {
 	return nil
 }
 
-func (c *Client) makeRequest(method, path string, body io.Reader) (*http.Request, error) {
+func (c *Client) makeRequest(method, path string, urlValues url.Values) (*http.Request, error) {
+	path = COINBASE_API_ENDPOINT + path
+
+	encoded := urlValues.Encode()
+	var body io.Reader = nil
+
+	if !hasFormBody(method) {
+		path += "?" + encoded
+	} else {
+		body = bytes.NewReader([]byte(encoded))
+	}
+
 	req, err := http.NewRequest(method, path, body)
+
+	if body != nil {
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.Header.Add("Content-Length", strconv.Itoa(len(encoded)))
+	}
 
 	if err != nil {
 		return nil, err
 	}
+	return req, nil
+}
 
+// generics when?
+//execute takes a new request
+func (c *Client) execute(req *http.Request, decode interface{}) error {
 	if c.ApiKey != "" && c.ApiSecret != "" {
 		// sign this request
 		c.signRequest(req)
 	}
-	return req, nil
+
+	resp, err := c.httpClient.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	decoded, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return err
+	}
+
+	// Coinbase returns all it's responses in the form of
+	// {"data": <some json format>}
+	// We can parse it into an intermediary map
+	// containing "data" -> raw bytes
+	// and then grab the mapped bytes & parse it into the
+	// Unmarshaler to decode our interface
+	var intermediary map[string]json.RawMessage
+	if err = json.Unmarshal(decoded, &intermediary); err != nil {
+		return err
+	}
+
+	if err = json.Unmarshal(intermediary["data"], decode); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //New creates a new client using an API key and API secret
-func New(apiKey, apiSecret string) *Client {
+func New(apiKey, apiSecret string, errorHandler func(error)) *Client {
 	return &Client{
-		httpClient: http.DefaultClient,
-		ApiKey:     apiKey,
-		ApiSecret:  apiSecret,
+		httpClient:   http.DefaultClient,
+		ApiKey:       apiKey,
+		ApiSecret:    apiSecret,
+		errorHandler: errorHandler,
 	}
 }
