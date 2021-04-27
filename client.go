@@ -64,8 +64,8 @@ func (c *Client) signRequest(req *http.Request) (err error) {
 	return nil
 }
 
-func (c *Client) makeRequest(path, method string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(path, method, body)
+func (c *Client) makeRequest(method, path string, body io.Reader) (*http.Request, error) {
+	req, err := http.NewRequest(method, path, body)
 
 	if err != nil {
 		return nil, err
