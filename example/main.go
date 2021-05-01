@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rbrick/coinbase"
 )
@@ -13,5 +14,9 @@ func main() {
 		}
 	})
 
-	fmt.Println(client.GetCurrencies())
+	fmt.Println("current BTC Price in USD is", client.GetSpotPrice("BTC", "USD", time.Time{}).Amount)
+
+	past := time.Date(2018, time.August, 1, 0, 0, 0, 0, time.UTC)
+
+	fmt.Println("price of BTC on Aug 1st 2018", client.GetSpotPrice("BTC", "USD", past).Amount)
 }
