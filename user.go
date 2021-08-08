@@ -18,8 +18,6 @@ const (
 
 type User struct {
 	Resource
-	//ID is the Resource ID
-	ID string `json:"id"`
 	//Name is the user's public name. Optional.
 	Name string `json:"name,omitempty"`
 	//Username is the user's username

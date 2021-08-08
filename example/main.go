@@ -22,7 +22,6 @@ func init() {
 	apiSecret = m["secret"]
 }
 
-// de9a835f-c928-56ca-9967-3f7378966eb6
 func main() {
 	client := coinbase.New(apiKey, apiSecret)
 
@@ -38,4 +37,11 @@ func main() {
 	user, _ := client.CurrentUser()
 
 	fmt.Println(user)
+
+	pagination := &coinbase.Pagination{
+		Limit: 25,
+		Order: coinbase.Ascending,
+	}
+
+	fmt.Println(pagination.Encode().Encode())
 }
