@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -48,22 +50,33 @@ func (c *Client) signRequest(req *http.Request) (err error) {
 
 	prehash := timestamp + strings.ToUpper(req.Method) + req.URL.Path
 
-	b, err := ioutil.ReadAll(req.Body)
+	var body []byte
+	if req.Body != nil {
+		body, err = ioutil.ReadAll(req.Body)
 
-	if err != nil && err != io.EOF {
-		// unexpected error
-		return err
+		if err != nil && err != io.EOF {
+			// unexpected error
+			return err
+		}
+
 	}
 
 	if err == nil {
 		// if there was an error it was EOF meaning no body
 		// if the error was null, assume there is a body
-		prehash += string(b)
+		prehash += string(body)
 	}
+
+	fmt.Println(body)
 
 	hmacHasher := hmac.New(sha256.New, []byte(c.ApiSecret))
 
-	req.Header.Add(CB_ACCESS_SIGN_HEADER, string(hmacHasher.Sum([]byte(prehash))))
+	hmacHasher.Write([]byte(prehash))
+
+	key := hex.EncodeToString(hmacHasher.Sum(nil))
+
+	fmt.Println(key)
+	req.Header.Add(CB_ACCESS_SIGN_HEADER, key)
 
 	return nil
 }
@@ -124,8 +137,12 @@ func (c *Client) execute(req *http.Request, decode interface{}) error {
 		return err
 	}
 
-	if err = json.Unmarshal(intermediary["data"], decode); err != nil {
-		return err
+	if _, ok := intermediary["data"]; ok {
+		if err = json.Unmarshal(intermediary["data"], decode); err != nil {
+			return err
+		}
+	} else {
+		return json.Unmarshal(decoded, decode)
 	}
 
 	return nil

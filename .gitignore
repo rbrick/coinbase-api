@@ -5,3 +5,5 @@ vendor/
 *.o
 *.so
 *.dll
+secrets
+example
