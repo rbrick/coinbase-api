@@ -35,8 +35,7 @@ type Client struct {
 	ApiSecret string
 
 	// HttpClient is the current HTTP client
-	httpClient   *http.Client
-	errorHandler func(error)
+	httpClient *http.Client
 }
 
 //signRequest signs the current request if needed
@@ -145,11 +144,10 @@ func (c *Client) execute(req *http.Request, decode interface{}) error {
 }
 
 //New creates a new client using an API key and API secret
-func New(apiKey, apiSecret string, errorHandler func(error)) *Client {
+func New(apiKey, apiSecret string) *Client {
 	return &Client{
-		httpClient:   http.DefaultClient,
-		ApiKey:       apiKey,
-		ApiSecret:    apiSecret,
-		errorHandler: errorHandler,
+		httpClient: http.DefaultClient,
+		ApiKey:     apiKey,
+		ApiSecret:  apiSecret,
 	}
 }

@@ -1,6 +1,7 @@
 package coinbase
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -44,12 +45,27 @@ type Country struct {
 	Name string `json:"name,omitempty"`
 }
 
-func (c *Client) CurrentUser() *User {
-	var user User
+func (c *Client) CurrentUser() (user *User, err error) {
 	req, err := c.makeRequest(http.MethodGet, PathUser, url.Values{})
 
-	c.errorHandler(err)
-	c.errorHandler(c.execute(req, &user))
+	if err != nil {
+		return
+	}
 
-	return &user
+	user = &User{}
+	err = c.execute(req, user)
+	return
+}
+
+func (c *Client) GetUser(id string) (user *User, err error) {
+	path := fmt.Sprintf(PathUsers, id)
+	req, err := c.makeRequest(http.MethodGet, path, url.Values{})
+
+	if err != nil {
+		return
+	}
+
+	user = &User{}
+	err = c.execute(req, user)
+	return
 }

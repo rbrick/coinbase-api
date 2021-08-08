@@ -29,21 +29,18 @@ type Price struct {
 	Currency string  `json:"currency"`
 }
 
-func (c *Client) GetCurrencies() []Currency {
-	var currencies []Currency
-
+func (c *Client) GetCurrencies() (currencies []Currency, err error) {
 	req, err := c.makeRequest(http.MethodGet, PathCurrencies, url.Values{})
 
-	c.errorHandler(err)
+	if err != nil {
+		return nil, err
+	}
 
-	c.errorHandler(c.execute(req, &currencies))
-
-	return currencies
+	err = c.execute(req, &currencies)
+	return
 }
 
-func (c *Client) GetSpotPrice(crypto, fiat string, at time.Time) *Price {
-	var price Price
-
+func (c *Client) GetSpotPrice(crypto, fiat string, at time.Time) (price *Price, err error) {
 	urlValues := url.Values{}
 	dateQuery := at.Format(TimePattern)
 
@@ -55,8 +52,11 @@ func (c *Client) GetSpotPrice(crypto, fiat string, at time.Time) *Price {
 
 	request, err := c.makeRequest(http.MethodGet, url, urlValues)
 
-	c.errorHandler(err)
-	c.errorHandler(c.execute(request, &price))
+	if err != nil {
+		return nil, err
+	}
 
-	return &price
+	price = &Price{}
+	err = c.execute(request, price)
+	return
 }

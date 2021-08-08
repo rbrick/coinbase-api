@@ -22,20 +22,20 @@ func init() {
 	apiSecret = m["secret"]
 }
 
+// de9a835f-c928-56ca-9967-3f7378966eb6
 func main() {
-	client := coinbase.New(apiKey, apiSecret, func(e error) {
-		if e != nil {
-			panic(e)
-		}
-	})
+	client := coinbase.New(apiKey, apiSecret)
 
-	fmt.Println("current BTC Price in USD is", client.GetSpotPrice("BTC", "USD", time.Time{}).Amount)
+	price, _ := client.GetSpotPrice("BTC", "USD", time.Time{})
+
+	fmt.Println("current BTC Price in USD is", price.Amount)
 
 	past := time.Date(2018, time.August, 1, 0, 0, 0, 0, time.UTC)
 
-	fmt.Println("price of BTC on Aug 1st 2018", client.GetSpotPrice("BTC", "USD", past).Amount)
+	price, _ = client.GetSpotPrice("BTC", "USD", past)
+	fmt.Println("price of BTC on Aug 1st 2018", price.Amount)
 
-	user := client.CurrentUser()
+	user, _ := client.CurrentUser()
 
 	fmt.Println(user)
 }
