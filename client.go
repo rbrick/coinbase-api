@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -67,15 +66,12 @@ func (c *Client) signRequest(req *http.Request) (err error) {
 		prehash += string(body)
 	}
 
-	fmt.Println(body)
-
 	hmacHasher := hmac.New(sha256.New, []byte(c.ApiSecret))
 
 	hmacHasher.Write([]byte(prehash))
 
 	key := hex.EncodeToString(hmacHasher.Sum(nil))
 
-	fmt.Println(key)
 	req.Header.Add(CB_ACCESS_SIGN_HEADER, key)
 
 	return nil
