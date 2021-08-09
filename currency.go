@@ -19,7 +19,8 @@ const (
 type Currency struct {
 	ID   string  `json:"id"`
 	Name string  `json:"name"`
-	Size float64 `json:"min_size,string"`
+	Code string  `json:"code,omitempty"`
+	Size float64 `json:"min_size,string,omitempty"`
 }
 
 // Represents the price of a specific coin.

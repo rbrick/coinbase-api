@@ -36,12 +36,22 @@ func main() {
 
 	user, _ := client.CurrentUser()
 
-	fmt.Println(user)
+	fmt.Println(user.Name)
 
 	pagination := &coinbase.Pagination{
 		Limit: 25,
 		Order: coinbase.Ascending,
 	}
 
-	fmt.Println(pagination.Encode().Encode())
+	accounts, err := client.Accounts(pagination)
+
+	if err != nil {
+		panic(err)
+	}
+
+	for _, account := range accounts.Accounts {
+		if account.Currency.Code == "BTC" && account.Type == coinbase.WalletAccount {
+			fmt.Println("Bitcoin Balance is", account.Balance.Amount)
+		}
+	}
 }

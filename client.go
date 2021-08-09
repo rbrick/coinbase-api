@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,11 @@ const (
 	CB_ACCESS_SIGN_HEADER = "CB-ACCESS-SIGN"
 	// The header for the access time stamp
 	CB_ACCESS_TIMESTAMP = "CB-ACCESS-TIMESTAMP"
+
+	CB_VERSION = "CB-VERSION"
+
+	// Update this as we go
+	CB_API_VERSION = "2021-04-26"
 )
 
 //Client is the main client for interacting with the Coinbase API
@@ -48,6 +54,10 @@ func (c *Client) signRequest(req *http.Request) (err error) {
 
 	prehash := timestamp + strings.ToUpper(req.Method) + req.URL.Path
 
+	if req.URL.RawQuery != "" {
+		prehash += "?" + req.URL.RawQuery
+	}
+
 	var body []byte
 	if req.Body != nil {
 		body, err = ioutil.ReadAll(req.Body)
@@ -60,9 +70,11 @@ func (c *Client) signRequest(req *http.Request) (err error) {
 	}
 
 	if err == nil {
+
 		// if there was an error it was EOF meaning no body
 		// if the error was null, assume there is a body
 		prehash += string(body)
+
 	}
 
 	hmacHasher := hmac.New(sha256.New, []byte(c.ApiSecret))
@@ -89,6 +101,8 @@ func (c *Client) makeRequest(method, path string, urlValues url.Values) (*http.R
 	}
 
 	req, err := http.NewRequest(method, path, body)
+
+	req.Header.Add(CB_VERSION, CB_API_VERSION)
 
 	if body != nil {
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -132,9 +146,34 @@ func (c *Client) execute(req *http.Request, decode interface{}) error {
 		return err
 	}
 
-	if _, ok := intermediary["data"]; ok {
-		if err = json.Unmarshal(intermediary["data"], decode); err != nil {
+	if v, ok := intermediary["pagination"]; ok {
+		if err = json.Unmarshal(v, decode); err != nil {
 			return err
+		}
+	}
+
+	if v, ok := intermediary["data"]; ok {
+		// there is a field in the struct that must take in all of data
+		if index, ok := FieldIndexByTag(decode, "data"); ok {
+			data := Data(decode, index)
+			newData := reflect.New(data.Type())
+			i := newData.Interface()
+
+			if err = json.Unmarshal(v, i); err != nil {
+				return err
+			}
+
+			v := reflect.ValueOf(i)
+
+			if v.Kind() == reflect.Ptr {
+				v = v.Elem()
+			}
+
+			SetField(decode, v.Interface(), index)
+		} else {
+			if err = json.Unmarshal(v, decode); err != nil {
+				return err
+			}
 		}
 	} else {
 		return json.Unmarshal(decoded, decode)
