@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -25,16 +26,19 @@ func init() {
 func main() {
 	client := coinbase.New(apiKey, apiSecret)
 
-	price, _ := client.GetSpotPrice("BTC", "USD", time.Time{})
+	ctx := context.Background()
+
+	fmt.Println(client.GetCurrencies(ctx))
+	price, _ := client.GetSpotPrice(ctx, "BTC", "USD", time.Time{})
 
 	fmt.Println("current BTC Price in USD is", price.Amount)
 
 	past := time.Date(2018, time.August, 1, 0, 0, 0, 0, time.UTC)
 
-	price, _ = client.GetSpotPrice("BTC", "USD", past)
+	price, _ = client.GetSpotPrice(ctx, "BTC", "USD", past)
 	fmt.Println("price of BTC on Aug 1st 2018", price.Amount)
 
-	user, _ := client.CurrentUser()
+	user, _ := client.CurrentUser(ctx)
 
 	fmt.Println(user.Name)
 
@@ -43,7 +47,7 @@ func main() {
 		Order: coinbase.Ascending,
 	}
 
-	accounts, err := client.Accounts(pagination)
+	accounts, err := client.Accounts(ctx, pagination)
 
 	if err != nil {
 		panic(err)

@@ -1,6 +1,7 @@
 package coinbase
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,11 +17,10 @@ const (
 
 // Represents a list of accepted fiat currencies
 // from endpoint: /currencies
-type Currency struct {
-	ID   string  `json:"id"`
-	Name string  `json:"name"`
-	Code string  `json:"code,omitempty"`
-	Size float64 `json:"min_size,string,omitempty"`
+type TraditionalCurrency struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	MinSize string `json:"min_size"`
 }
 
 // Represents the price of a specific coin.
@@ -30,18 +30,18 @@ type Price struct {
 	Currency string  `json:"currency"`
 }
 
-func (c *Client) GetCurrencies() (currencies []Currency, err error) {
+func (c *Client) GetCurrencies(ctx context.Context) (currencies []TraditionalCurrency, err error) {
 	req, err := c.makeRequest(http.MethodGet, PathCurrencies, url.Values{})
 
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.execute(req, &currencies)
+	err = c.execute(ctx, req, &currencies)
 	return
 }
 
-func (c *Client) GetSpotPrice(crypto, fiat string, at time.Time) (price *Price, err error) {
+func (c *Client) GetSpotPrice(ctx context.Context, crypto, fiat string, at time.Time) (price *Price, err error) {
 	urlValues := url.Values{}
 	dateQuery := at.Format(TimePattern)
 
@@ -58,6 +58,6 @@ func (c *Client) GetSpotPrice(crypto, fiat string, at time.Time) (price *Price, 
 	}
 
 	price = &Price{}
-	err = c.execute(request, price)
+	err = c.execute(ctx, request, price)
 	return
 }

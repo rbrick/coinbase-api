@@ -1,8 +1,8 @@
 package coinbase
 
 import (
+	"context"
 	"net/http"
-	"time"
 )
 
 const (
@@ -17,21 +17,28 @@ const (
 
 type Account struct {
 	Resource
+	ID               string   `json:"id"`
+	Name             string   `json:"name"`
+	Primary          bool     `json:"primary"`
+	Type             string   `json:"type"`
+	Currency         Currency `json:"currency"`
+	Balance          Balance  `json:"balance"`
+	CreatedAt        string   `json:"created_at"`
+	UpdatedAt        string   `json:"updated_at"`
+	AllowDeposits    bool     `json:"allow_deposits"`
+	AllowWithdrawals bool     `json:"allow_withdrawals"`
+}
 
-	//Name is the Account name
-	Name string `json:"name"`
-	//Primary tells whether this account is the primary account
-	Primary bool `json:"primary,omitempty"`
-	//Type The type of the account. Can be "wallet", "fiat", or "vault"
-	Type string `json:"type"`
-	//Currency is the type of currency for this account
-	Currency *Currency `json:"currency,omitempty"`
-	//Balance is the current balance of the account
-	Balance *Balance `json:"balance,omitempty"`
-
-	//Timestamps for creation and last account action time
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+type Currency struct {
+	Code         string `json:"code"`
+	Name         string `json:"name"`
+	Color        string `json:"color"`
+	SortIndex    int64  `json:"sort_index"`
+	Exponent     int64  `json:"exponent"`
+	Type         string `json:"type"`
+	AddressRegex string `json:"address_regex"`
+	AssetID      string `json:"asset_id"`
+	Slug         string `json:"slug"`
 }
 
 type Balance struct {
@@ -44,7 +51,7 @@ type Accounts struct {
 	Accounts []Account `data:"true"`
 }
 
-func (c *Client) Accounts(settings *Pagination) (*Accounts, error) {
+func (c *Client) Accounts(ctx context.Context, settings *Pagination) (*Accounts, error) {
 	req, err := c.makeRequest(http.MethodGet, PathAccounts, settings.Encode())
 
 	if err != nil {
@@ -53,7 +60,7 @@ func (c *Client) Accounts(settings *Pagination) (*Accounts, error) {
 
 	var accounts Accounts
 
-	if err = c.execute(req, &accounts); err != nil {
+	if err = c.execute(ctx, req, &accounts); err != nil {
 		return nil, err
 	}
 

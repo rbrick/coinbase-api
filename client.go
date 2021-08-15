@@ -2,10 +2,12 @@ package coinbase
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -40,8 +44,16 @@ type Client struct {
 	ApiKey    string
 	ApiSecret string
 
+	// this is used to provide a request with a token
+	token *oauth2.Token
+
 	// HttpClient is the current HTTP client
 	httpClient *http.Client
+}
+
+func (c *Client) WithToken(token *oauth2.Token) *Client {
+	c.token = token
+	return c
 }
 
 //signRequest signs the current request if needed
@@ -117,10 +129,17 @@ func (c *Client) makeRequest(method, path string, urlValues url.Values) (*http.R
 
 // generics when?
 //execute takes a new request
-func (c *Client) execute(req *http.Request, decode interface{}) error {
+func (c *Client) execute(ctx context.Context, req *http.Request, decode interface{}) error {
 	if c.ApiKey != "" && c.ApiSecret != "" {
 		// sign this request
 		c.signRequest(req)
+	}
+
+	if token := ctx.Value("token"); token != nil {
+		switch at := token.(type) {
+		case oauth2.Token:
+			req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", at.AccessToken))
+		}
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -144,6 +163,10 @@ func (c *Client) execute(req *http.Request, decode interface{}) error {
 	var intermediary map[string]json.RawMessage
 	if err = json.Unmarshal(decoded, &intermediary); err != nil {
 		return err
+	}
+
+	for _, v := range intermediary {
+		fmt.Println(string(v))
 	}
 
 	if v, ok := intermediary["pagination"]; ok {
